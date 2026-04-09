@@ -1,0 +1,132 @@
+/*
+ * New structure for two-column layout: Builder (left) and Viewer (right)
+ */
+.clc-configurator-meta-box-content {
+    display: flex;
+    gap: 20px;
+    /* Space between columns */
+}
+
+.clc-builder-column {
+    flex: 1;
+    /* Takes up available space */
+    min-width: 400px;
+    /* Ensure builder area is readable */
+}
+
+.clc-viewer-column {
+    width: 25%;
+    /* Allocate specific width to the viewer */
+    position: sticky;
+    /* Make the viewer column stick to the viewport */
+    top: 50px;
+    /* Offset from the top bar (adjust as needed) */
+    align-self: flex-start;
+    /* Prevents stretching to the height of the builder */
+    height: 600px;
+    /* Set a fixed height for the sticky container */
+}
+
+/* Ensure the model-viewer element fills its sticky container */
+#clc-admin-viewer-wrap {
+    height: 100%;
+    background: #eee;
+    border: 1px solid #ccc;
+    margin-bottom: 0;
+    /* Remove bottom margin from this element */
+}
+
+#clc-admin-model-viewer {
+    width: 100%;
+    height: 100%;
+}
+
+/* Original styles below */
+
+#clc-builder-root {
+    border: 1px solid #ddd;
+    padding: 10px;
+    background: #fafafa;
+    margin-top: 10px;
+}
+
+.clc-admin-cat-order {
+    margin: 0 0 10px 0;
+    padding-left: 20px;
+}
+
+.clc-admin-cats-wrap {
+    margin-top: 10px;
+}
+
+.clc-admin-cat-block {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #fff;
+}
+
+.clc-admin-cat-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.clc-admin-cat-fields p {
+    margin: 4px 0;
+}
+
+.clc-admin-option-row,
+.clc-admin-type-block,
+.clc-admin-color-row {
+    border: 1px solid #eee;
+    padding: 8px;
+    margin: 6px 0;
+    background: #fdfdfd;
+}
+
+/* Materials scan list */
+#clc-materials-list {
+    border: 1px solid #ddd;
+    padding: 8px;
+    background: #fcfcfc;
+    margin-bottom: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#clc-materials-list code {
+    background: #f2f2f2;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.clc-materials-ul {
+    margin: 4px 0;
+    /* Use no list style and padding for clean look */
+    list-style-type: none;
+    padding: 0;
+}
+
+/* Make list items interactive */
+.clc-materials-ul li {
+    padding: 4px 8px;
+    cursor: pointer;
+    margin-bottom: 2px;
+    border-radius: 4px;
+    transition: background-color 0.1s ease;
+}
+
+/* Highlighted material in the list */
+.clc-materials-ul li:hover,
+.clc-materials-ul li.highlight {
+    /* New class for model hover */
+    background-color: #e6f7ff;
+    /* Light blue background on hover */
+    border: 1px solid #b3e6ff;
+}
+
+/* Fix for multi-select dropdown */
+.clc-material-selector {
+    min-height: 100px;
+}
