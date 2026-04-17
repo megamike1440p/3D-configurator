@@ -5,10 +5,10 @@
      * Requires:
      * - jQuery
      * - wp.media (ensure wp_enqueue_media() in admin)
-     * - model-viewer scanner file populates: window.CLC_MATERIALS.list (File 2)
+     * - model-viewer scanner file populates: window.MATERIALS.list (File 2)
      *
      * Writes:
-     * - JSON into #clc_config_json
+     * - JSON into #config_json
      */
 
     // -----------------------------
@@ -45,13 +45,13 @@
     }
 
     function getBasePrice() {
-        const v = Number($("#clc_base_price").val() || 0);
+        const v = Number($("#base_price").val() || 0);
         return Number.isFinite(v) ? v : 0;
     }
 
     function getMaterialsList() {
-        const list = window.CLC_MATERIALS && Array.isArray(window.CLC_MATERIALS.list)
-            ? window.CLC_MATERIALS.list
+        const list = window.MATERIALS && Array.isArray(window.MATERIALS.list)
+            ? window.MATERIALS.list
             : [];
         return list.slice();
     }
@@ -66,7 +66,7 @@
         const basePrice = getBasePrice();
 
         // If it looks like ours, keep it
-        if (raw && typeof raw === "object" && raw.schema === "clc-configurator" && raw.root) {
+        if (raw && typeof raw === "object" && raw.schema === "configurator" && raw.root) {
             raw.basePrice = Number(raw.basePrice ?? basePrice);
             raw.models = Array.isArray(raw.models) ? raw.models : [];
             raw.root = normalizeNode(raw.root, true);
@@ -77,7 +77,7 @@
 
         // New clean config
         return {
-            schema: "clc-configurator",
+            schema: "configurator",
             basePrice: Number(basePrice),
             models: [
                 { id: "default", label: "Default Model", src: "" }
@@ -150,10 +150,10 @@
     function syncHiddenJSON() {
         CFG.basePrice = getBasePrice();
         const json = JSON.stringify(CFG);
-        const $ta = $('#clc_config_json');
+        const $ta = $('#config_json');
         $ta.val(json);
         // Notify other admin helpers (material scanner, etc.) using the SAME config the builder just wrote.
-        $(document).trigger('clc:config-updated', [CFG]);
+        $(document).trigger('config-updated', [CFG]);
         // Also trigger native events for any listeners bound to the textarea.
         $ta.trigger('input');
     }
@@ -307,35 +307,35 @@
     // -----------------------------
     function render() {
         captureExpandedNodes();
-        const $root = $("#clc-builder-root");
+        const $root = $("#builder-root");
         if (!$root.length) return;
 
         $root.empty();
 
         const $wrap = $(`
-      <div class="clc-tree-editor">
-        <div class="clc-tree-left">
-          <div class="clc-tree-topbar">
-            <div class="clc-tree-title">
+      <div class="tree-editor">
+        <div class="tree-left">
+          <div class="tree-topbar">
+            <div class="tree-title">
               <strong>Configurator Builder</strong>
-              <div class="clc-tree-subtitle">Build layers, rules, and choices without technical fields.</div>
+              <div class="tree-subtitle">Build layers, rules, and choices without technical fields.</div>
             </div>
-            <div class="clc-tree-actions">
-              <button type="button" class="button clc-add-top">+ Add Top Choice</button>
-              <button type="button" class="button clc-expand-all">Expand All</button>
-              <button type="button" class="button clc-collapse-all">Collapse All</button>
+            <div class="tree-actions">
+              <button type="button" class="button add-top">+ Add Top Choice</button>
+              <button type="button" class="button expand-all">Expand All</button>
+              <button type="button" class="button collapse-all">Collapse All</button>
             </div>
           </div>
 
-          <div class="clc-tree-list"></div>
+          <div class="tree-list"></div>
 
-          <div class="clc-tree-footer">
+          <div class="tree-footer">
             <small><em>Tip:</em> A “choice” can also act as a category by adding children beneath it.</small>
           </div>
         </div>
 
-        <div class="clc-tree-right">
-          <div class="clc-details"></div>
+        <div class="tree-right">
+          <div class="details"></div>
         </div>
       </div>
     `);
@@ -343,51 +343,51 @@
         // Minimal style injection (we'll refine CSS later, but this is already far friendlier than “boxes everywhere”)
         const $style = $(`
       <style>
-        .clc-tree-editor { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .clc-tree-left, .clc-tree-right { border: 1px solid #ddd; background: #fff; padding: 12px; border-radius: 10px; }
-        .clc-tree-topbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 10px; }
-        .clc-tree-subtitle { font-size: 12px; color: #666; margin-top: 2px; }
-        .clc-tree-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-        .clc-node { border: 1px solid #eee; background: #fafafa; border-radius: 10px; padding: 10px; margin: 8px 0; }
-        .clc-node-header { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
-        .clc-node-left { display: flex; gap: 10px; align-items: center; }
-        .clc-node-toggle { width: 28px; height: 28px; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
-        .clc-node-label { cursor: pointer; font-weight: 700; }
-        .clc-node-id { font-size: 11px; color: #777; }
-        .clc-node-controls { display: flex; gap: 6px; align-items: center; }
-        .clc-node-children { margin-left: 18px; margin-top: 8px; display: none; }
-        .clc-node.expanded > .clc-node-children { display: block; }
-        .clc-node.selected { outline: 2px solid #2271b1; background: #f0f7ff; }
-        .clc-details h3 { margin-top: 0; }
-        .clc-section { border-top: 1px solid #eee; padding-top: 12px; margin-top: 12px; }
-        .clc-field { margin: 10px 0; }
-        .clc-field label { display: block; font-weight: 700; margin-bottom: 4px; }
-        .clc-field input[type="text"], .clc-field input[type="number"], .clc-field select { width: 100%; }
-        .clc-pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .clc-pill { border: 1px solid #ddd; border-radius: 999px; padding: 5px 10px; background: #fff; display: inline-flex; gap: 8px; align-items: center; }
-        .clc-pill code { font-size: 11px; }
-        .clc-pill button { border: none; background: transparent; color: #b32d2e; cursor: pointer; font-weight: 700; }
-        .clc-effect-card { border: 1px solid #e6e6e6; background: #fff; border-radius: 10px; padding: 10px; margin: 8px 0; }
-        .clc-effect-head { display:flex; align-items:center; gap:10px; }
-        .clc-effect-type { font-weight: 800; }
-        .clc-effect-actions { margin-left: auto; display:flex; gap:8px; }
-        .clc-effect-body { margin-top: 10px; display:grid; gap:10px; }
-        .clc-inline { display:grid; grid-template-columns: 140px 1fr; gap: 10px; align-items:center; }
-        .clc-muted { color:#666; font-size: 12px; }
-        .clc-img-preview { max-width: 140px; border: 1px solid #ddd; border-radius: 8px; }
-        .clc-row { display:flex; gap: 8px; flex-wrap: wrap; }
+        .tree-editor { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .tree-left, .tree-right { border: 1px solid #ddd; background: #fff; padding: 12px; border-radius: 10px; }
+        .tree-topbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 10px; }
+        .tree-subtitle { font-size: 12px; color: #666; margin-top: 2px; }
+        .tree-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .node { border: 1px solid #eee; background: #fafafa; border-radius: 10px; padding: 10px; margin: 8px 0; }
+        .node-header { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+        .node-left { display: flex; gap: 10px; align-items: center; }
+        .node-toggle { width: 28px; height: 28px; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
+        .node-label { cursor: pointer; font-weight: 700; }
+        .node-id { font-size: 11px; color: #777; }
+        .node-controls { display: flex; gap: 6px; align-items: center; }
+        .node-children { margin-left: 18px; margin-top: 8px; display: none; }
+        .node.expanded > .node-children { display: block; }
+        .node.selected { outline: 2px solid #2271b1; background: #f0f7ff; }
+        .details h3 { margin-top: 0; }
+        .section { border-top: 1px solid #eee; padding-top: 12px; margin-top: 12px; }
+        .field { margin: 10px 0; }
+        .field label { display: block; font-weight: 700; margin-bottom: 4px; }
+        .field input[type="text"], .field input[type="number"], .field select { width: 100%; }
+        .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .pill { border: 1px solid #ddd; border-radius: 999px; padding: 5px 10px; background: #fff; display: inline-flex; gap: 8px; align-items: center; }
+        .pill code { font-size: 11px; }
+        .pill button { border: none; background: transparent; color: #b32d2e; cursor: pointer; font-weight: 700; }
+        .effect-card { border: 1px solid #e6e6e6; background: #fff; border-radius: 10px; padding: 10px; margin: 8px 0; }
+        .effect-head { display:flex; align-items:center; gap:10px; }
+        .effect-type { font-weight: 800; }
+        .effect-actions { margin-left: auto; display:flex; gap:8px; }
+        .effect-body { margin-top: 10px; display:grid; gap:10px; }
+        .inline { display:grid; grid-template-columns: 140px 1fr; gap: 10px; align-items:center; }
+        .muted { color:#666; font-size: 12px; }
+        .img-preview { max-width: 140px; border: 1px solid #ddd; border-radius: 8px; }
+        .row { display:flex; gap: 8px; flex-wrap: wrap; }
       </style>
     `);
 
         $root.append($style, $wrap);
 
-        renderTree($wrap.find(".clc-tree-list"));
+        renderTree($wrap.find(".tree-list"));
 
         if (!SELECTED_NODE_ID) SELECTED_NODE_ID = "root";
-        renderDetails($wrap.find(".clc-details"));
+        renderDetails($wrap.find(".details"));
 
         // Wire actions
-        $wrap.find(".clc-add-top").on("click", function () {
+        $wrap.find(".add-top").on("click", function () {
             const n = normalizeNode({ id: uid("choice"), label: "New Choice", children: [] });
             CFG.root.children.push(n);
             SELECTED_NODE_ID = n.id;
@@ -395,19 +395,19 @@
             render();
         });
 
-        $wrap.find(".clc-expand-all").on("click", function () {
-            $wrap.find(".clc-node").addClass("expanded");
-            $wrap.find(".clc-node-toggle").each(function () {
-                const $n = $(this).closest(".clc-node");
-                if ($n.find(".clc-node-children").children().length) $(this).text("▾");
+        $wrap.find(".expand-all").on("click", function () {
+            $wrap.find(".node").addClass("expanded");
+            $wrap.find(".node-toggle").each(function () {
+                const $n = $(this).closest(".node");
+                if ($n.find(".node-children").children().length) $(this).text("▾");
             });
         });
 
-        $wrap.find(".clc-collapse-all").on("click", function () {
-            $wrap.find(".clc-node").removeClass("expanded");
-            $wrap.find(".clc-node-toggle").each(function () {
-                const $n = $(this).closest(".clc-node");
-                if ($n.find(".clc-node-children").children().length) $(this).text("▸");
+        $wrap.find(".collapse-all").on("click", function () {
+            $wrap.find(".node").removeClass("expanded");
+            $wrap.find(".node-toggle").each(function () {
+                const $n = $(this).closest(".node");
+                if ($n.find(".node-children").children().length) $(this).text("▸");
             });
         });
         restoreExpandedNodes();
@@ -425,33 +425,33 @@
         const hasKids = (node.children || []).length > 0;
 
         const $node = $(`
-      <div class="clc-node" data-node-id="${escapeHtml(node.id)}">
-        <div class="clc-node-header">
-          <div class="clc-node-left">
-            <button type="button" class="clc-node-toggle" title="${hasKids ? "Expand/collapse" : "No children"}">
+      <div class="node" data-node-id="${escapeHtml(node.id)}">
+        <div class="node-header">
+          <div class="node-left">
+            <button type="button" class="node-toggle" title="${hasKids ? "Expand/collapse" : "No children"}">
               ${hasKids ? "▸" : "•"}
             </button>
             <div>
-              <div class="clc-node-label">
+              <div class="node-label">
   ${escapeHtml(node.label)}
-  ${node.selectable === false ? `<span class="clc-muted"> (category)</span>` : ""}
+  ${node.selectable === false ? `<span class="muted"> (category)</span>` : ""}
 </div>
 
-              <div class="clc-node-id"><code>${escapeHtml(node.id)}</code></div>
+              <div class="node-id"><code>${escapeHtml(node.id)}</code></div>
             </div>
           </div>
 
-          <div class="clc-node-controls">
-            <button type="button" class="button clc-add-child">+ Child</button>
+          <div class="node-controls">
+            <button type="button" class="button add-child">+ Child</button>
             ${node.id !== "root" ? `
               <button type="button" class="button" data-move="up">↑</button>
               <button type="button" class="button" data-move="down">↓</button>
-              <button type="button" class="button-link-delete clc-delete">Delete</button>
+              <button type="button" class="button-link-delete delete">Delete</button>
             ` : ""}
           </div>
         </div>
 
-        <div class="clc-node-children"></div>
+        <div class="node-children"></div>
       </div>
     `);
 
@@ -460,7 +460,7 @@
         if (node.id === SELECTED_NODE_ID) $node.addClass("selected");
 
         // Expand/collapse
-        $node.find(".clc-node-toggle").on("click", function (e) {
+        $node.find(".node-toggle").on("click", function (e) {
             e.stopPropagation();
             if (!hasKids) return;
             $node.toggleClass("expanded");
@@ -468,7 +468,7 @@
         });
 
         // Select node
-        $node.find(".clc-node-label, .clc-node-id").on("click", function (e) {
+        $node.find(".node-label, .node-id").on("click", function (e) {
             e.stopPropagation();
             SELECTED_NODE_ID = node.id;
             render();
@@ -476,7 +476,7 @@
 
 
         // Add child
-        $node.find(".clc-add-child").on("click", function (e) {
+        $node.find(".add-child").on("click", function (e) {
             e.stopPropagation();
             const child = normalizeNode({ id: uid("choice"), label: "New Choice", children: [] });
             node.children = node.children || [];
@@ -502,7 +502,7 @@
         });
 
         // Delete
-        $node.find(".clc-delete").on("click", function (e) {
+        $node.find(".delete").on("click", function (e) {
             e.stopPropagation();
             if (!confirm("Delete this choice and all of its children?")) return;
 
@@ -521,11 +521,11 @@
         });
 
         // Children
-        const $kidsWrap = $node.find(".clc-node-children");
+        const $kidsWrap = $node.find(".node-children");
         if (hasKids) {
             if (node.id === "root") {
                 $node.addClass("expanded");
-                $node.find(".clc-node-toggle").text("▾");
+                $node.find(".node-toggle").text("▾");
             }
             node.children.forEach(ch => $kidsWrap.append(renderNode(ch, depth + 1)));
         }
@@ -552,63 +552,63 @@
   </h3>
 
   ${node.id === "root" ? `
-    <div class="clc-section">
+    <div class="section">
       <h3 style="margin:0 0 8px 0;">Models</h3>
-      <div class="clc-muted">
+      <div class="muted">
         Used for model swaps (e.g., base/back changes). Customers won’t know you’re swapping.
       </div>
-      <div class="clc-models"></div>
+      <div class="models"></div>
 
-      <div class="clc-row" style="margin-top:10px;">
-        <button type="button" class="button clc-model-add">+ Add Model</button>
+      <div class="row" style="margin-top:10px;">
+        <button type="button" class="button model-add">+ Add Model</button>
       </div>
     </div>
   ` : ``}
 
   ${node.id !== "root" ? `
-    <div class="clc-section">
+    <div class="section">
       <h3 style="margin:0 0 8px 0;">Choice</h3>
 
       <!-- Label -->
-      <div class="clc-field">
+      <div class="field">
         <label>Label</label>
         <input type="text"
-               class="clc-detail-label"
+               class="detail-label"
                value="${escapeHtml(node.label)}" />
-        <div class="clc-muted">What the customer sees.</div>
+        <div class="muted">What the customer sees.</div>
       </div>
       <!-- Thumbnail (optional) -->
-      <div class="clc-field">
+      <div class="field">
         <label>Thumbnail (optional)</label>
-        <div class="clc-row clc-thumb-row">
-          <button type="button" class="button clc-thumb-pick">Choose image</button>
-          <button type="button" class="button clc-thumb-clear" ${node.thumbUrl ? "" : "disabled"}>Clear</button>
+        <div class="row thumb-row">
+          <button type="button" class="button thumb-pick">Choose image</button>
+          <button type="button" class="button thumb-clear" ${node.thumbUrl ? "" : "disabled"}>Clear</button>
         </div>
-        <div class="clc-thumb-preview-wrap" ${node.thumbUrl ? "" : "hidden"}>
-          <img class="clc-thumb-preview" src="${escapeHtml(node.thumbUrl || "")}" alt="" />
+        <div class="thumb-preview-wrap" ${node.thumbUrl ? "" : "hidden"}>
+          <img class="thumb-preview" src="${escapeHtml(node.thumbUrl || "")}" alt="" />
         </div>
-        <div class="clc-muted">Optional. If set, the runtime can render this choice with a thumbnail.</div>
+        <div class="muted">Optional. If set, the runtime can render this choice with a thumbnail.</div>
       </div>
 
 
       <!-- Node type -->
-      <div class="clc-field">
+      <div class="field">
         <label>Node type</label>
-        <select class="clc-detail-selectable">
+        <select class="detail-selectable">
           <option value="choice">Choice (customer can select)</option>
           <option value="category">Category only (used to group choices)</option>
         </select>
-        <div class="clc-muted">
+        <div class="muted">
           Categories are not selectable by customers. They only reveal their children.
         </div>
       </div>
 
       <!-- Children behavior -->
-      <div class="clc-field">
+      <div class="field">
         <label>Children behavior</label>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <div>
-            <select class="clc-detail-childSelect">
+            <select class="detail-childSelect">
               <option value="single"${node.childSelect === "single" ? " selected" : ""}>
                 Single-select (choose one)
               </option>
@@ -616,13 +616,13 @@
                 Multi-select (choose many)
               </option>
             </select>
-            <div class="clc-muted">
+            <div class="muted">
               How customers pick among this choice’s children.
             </div>
           </div>
 
           <div>
-            <select class="clc-detail-childReveal">
+            <select class="detail-childReveal">
               <option value="whenSelected"${node.childReveal === "whenSelected" ? " selected" : ""}>
                 Reveal children only when selected
               </option>
@@ -630,7 +630,7 @@
                 Children always visible
               </option>
             </select>
-            <div class="clc-muted">
+            <div class="muted">
               Whether child layers show immediately.
             </div>
           </div>
@@ -639,24 +639,24 @@
     </div>
   ` : ``}
 ${node.id !== "root" ? `
-  <div class="clc-field">
+  <div class="field">
     <label style="display:flex; align-items:center; gap:6px;">
-      <input type="checkbox" class="clc-detail-default"
+      <input type="checkbox" class="detail-default"
              ${node.default ? "checked" : ""}>
       Default choice
     </label>
-    <div class="clc-muted">
+    <div class="muted">
       This option will be auto-selected when available.
     </div>
   </div>
 ` : ""}
 
-  <div class="clc-section">
+  <div class="section">
     <h3 style="margin:0 0 8px 0;">Visibility rules</h3>
-    <div class="clc-visibleIf-list"></div>
+    <div class="visibleIf-list"></div>
 
-    <div class="clc-row" style="margin-top:8px;">
-      <select class="clc-visibleIf-target">
+    <div class="row" style="margin-top:8px;">
+      <select class="visibleIf-target">
         <option value="">Show only when…</option>
         ${allNodes
                 .map(n =>
@@ -666,30 +666,30 @@ ${node.id !== "root" ? `
                 ).join("")}
       </select>
 
-      <select class="clc-visibleIf-state">
+      <select class="visibleIf-state">
         <option value="selected">is selected</option>
         <option value="unselected">is NOT selected</option>
       </select>
 
-      <button type="button" class="button clc-visibleIf-add">+ Add</button>
+      <button type="button" class="button visibleIf-add">+ Add</button>
     </div>
 
-    <div class="clc-muted">
+    <div class="muted">
       Example: show “Arms” only when “Chair Type” is selected.
     </div>
   </div>
 
   ${node.id !== "root" ? `
-    <div class="clc-section">
+    <div class="section">
       <h3 style="margin:0 0 8px 0;">Effects</h3>
-      <div class="clc-muted">
+      <div class="muted">
         Effects happen when this choice is selected.
       </div>
 
-      <div class="clc-effects-list"></div>
+      <div class="effects-list"></div>
 
-      <div class="clc-row" style="margin-top:8px;">
-        <select class="clc-effect-type">
+      <div class="row" style="margin-top:8px;">
+        <select class="effect-type">
           <option value="texture">Apply Texture</option>
           <option value="colorize">Apply Color</option>
           <option value="model">Swap Model</option>
@@ -698,19 +698,19 @@ ${node.id !== "root" ? `
           <option value="hideMaterial">Hide Material</option>
         </select>
 
-        <button type="button" class="button clc-effect-add">
+        <button type="button" class="button effect-add">
           + Add Effect
         </button>
 
         <button type="button"
-                class="button clc-effect-refresh-materials"
+                class="button effect-refresh-materials"
                 title="After scanning materials, click this if dropdowns were already open">
           Refresh Materials
         </button>
       </div>
 
       ${materials.length ? "" : `
-        <div class="clc-muted" style="margin-top:8px;">
+        <div class="muted" style="margin-top:8px;">
           <strong>Heads up:</strong>
           You haven’t scanned materials yet.
         </div>
@@ -722,9 +722,9 @@ ${node.id !== "root" ? `
 
         // Root models editor
         if (node.id === "root") {
-            renderModelsEditor($details.find(".clc-models"));
+            renderModelsEditor($details.find(".models"));
 
-            $details.find(".clc-model-add").on("click", function () {
+            $details.find(".model-add").on("click", function () {
                 const id = normalizeModelId(prompt("Model ID (simple, no spaces):", "back_tall") || "");
                 if (!id) return;
                 if (CFG.models.some(m => m.id === id)) {
@@ -739,18 +739,18 @@ ${node.id !== "root" ? `
 
         // Choice label
 
-        $details.find(".clc-detail-label").on("input", function () {
+        $details.find(".detail-label").on("input", function () {
 
             node.label = $(this).val();
 
             syncHiddenJSON();
 
             // Update the tree label in-place (no full render, so focus stays)
-            const $treeNode = $(`.clc-node[data-node-id="${CSS.escape(node.id)}"]`);
+            const $treeNode = $(`.node[data-node-id="${CSS.escape(node.id)}"]`);
             if ($treeNode.length) {
                 const suffix = (node.selectable === false) ? " (category)" : "";
 
-                $treeNode.find(".clc-node-label").first().text(node.label + suffix);
+                $treeNode.find(".node-label").first().text(node.label + suffix);
 
             }
 
@@ -761,9 +761,9 @@ ${node.id !== "root" ? `
 
         // Thumbnail (optional)
 
-        const $thumbWrap = $details.find(".clc-thumb-preview-wrap");
-        const $thumbImg = $details.find(".clc-thumb-preview");
-        const $thumbClear = $details.find(".clc-thumb-clear");
+        const $thumbWrap = $details.find(".thumb-preview-wrap");
+        const $thumbImg = $details.find(".thumb-preview");
+        const $thumbClear = $details.find(".thumb-clear");
 
         function refreshThumbUI() {
             const hasThumb = !!(node.thumbUrl && String(node.thumbUrl).trim());
@@ -774,7 +774,7 @@ ${node.id !== "root" ? `
 
         refreshThumbUI();
 
-        $details.find(".clc-thumb-pick").on("click", function () {
+        $details.find(".thumb-pick").on("click", function () {
             pickMediaImage((att) => {
                 if (!att) return;
                 node.thumbId = att.id != null ? Number(att.id) : null;
@@ -794,7 +794,7 @@ ${node.id !== "root" ? `
 
 
 
-        $details.find(".clc-detail-selectable")
+        $details.find(".detail-selectable")
             .val(node.selectable === false ? "category" : "choice")
             .on("change", function () {
                 const v = $(this).val();
@@ -810,24 +810,24 @@ ${node.id !== "root" ? `
             });
 
         // Child behaviors
-        $details.find(".clc-detail-childSelect").on("change", function () {
+        $details.find(".detail-childSelect").on("change", function () {
             node.childSelect = $(this).val() === "multi" ? "multi" : "single";
             syncHiddenJSON();
         });
 
-        $details.find(".clc-detail-childReveal").on("change", function () {
+        $details.find(".detail-childReveal").on("change", function () {
             node.childReveal = $(this).val() === "always" ? "always" : "whenSelected";
             syncHiddenJSON();
         });
 
         // Visibility rules
-        renderVisibleIfList($details.find(".clc-visibleIf-list"), node, allNodes);
+        renderVisibleIfList($details.find(".visibleIf-list"), node, allNodes);
 
-        $details.find(".clc-visibleIf-add").on("click", function () {
-            const targetId = String($details.find(".clc-visibleIf-target").val() || "");
+        $details.find(".visibleIf-add").on("click", function () {
+            const targetId = String($details.find(".visibleIf-target").val() || "");
             if (!targetId) return;
 
-            const state = String($details.find(".clc-visibleIf-state").val() || "selected");
+            const state = String($details.find(".visibleIf-state").val() || "selected");
             node.visibleIf = node.visibleIf || [];
 
             const exists = node.visibleIf.some(r => r.targetId === targetId && r.state === state);
@@ -839,23 +839,23 @@ ${node.id !== "root" ? `
         });
 
         // Effects
-        renderEffectsList($details.find(".clc-effects-list"), node);
+        renderEffectsList($details.find(".effects-list"), node);
 
-        $details.find(".clc-effect-add").on("click", function () {
-            const type = String($details.find(".clc-effect-type").val() || "texture");
+        $details.find(".effect-add").on("click", function () {
+            const type = String($details.find(".effect-type").val() || "texture");
             node.effects = node.effects || [];
             node.effects.push(createDefaultEffect(type));
             syncHiddenJSON();
             renderDetails($container);
         });
 
-        $details.find(".clc-effect-refresh-materials").on("click", function () {
+        $details.find(".effect-refresh-materials").on("click", function () {
             // Just re-render details to rebuild all material dropdowns from the newest scan result
             renderDetails($container);
         });
 
         //default selection
-        $details.find(".clc-detail-default")
+        $details.find(".detail-default")
             .prop("checked", node.default === true)
             .on("change", function () {
                 const checked = $(this).is(":checked");
@@ -881,46 +881,46 @@ ${node.id !== "root" ? `
 
         const models = Array.isArray(CFG.models) ? CFG.models : (CFG.models = []);
         if (!models.length) {
-            $container.append(`<div class="clc-muted"><em>No models added yet.</em></div>`);
+            $container.append(`<div class="muted"><em>No models added yet.</em></div>`);
             return;
         }
 
         models.forEach((m, idx) => {
             const $row = $(`
-        <div class="clc-effect-card">
-          <div class="clc-effect-head">
-            <div class="clc-effect-type">Model</div>
-            <div class="clc-muted"><code>${escapeHtml(m.id)}</code></div>
-            <div class="clc-effect-actions">
-              ${m.id === "default" ? "" : `<button type="button" class="button-link-delete clc-model-remove">Remove</button>`}
+        <div class="effect-card">
+          <div class="effect-head">
+            <div class="effect-type">Model</div>
+            <div class="muted"><code>${escapeHtml(m.id)}</code></div>
+            <div class="effect-actions">
+              ${m.id === "default" ? "" : `<button type="button" class="button-link-delete model-remove">Remove</button>`}
             </div>
           </div>
 
-          <div class="clc-effect-body">
-            <div class="clc-inline">
+          <div class="effect-body">
+            <div class="inline">
               <div><strong>Label</strong></div>
-              <div><input type="text" class="clc-model-label" value="${escapeHtml(m.label || "")}"></div>
+              <div><input type="text" class="model-label" value="${escapeHtml(m.label || "")}"></div>
             </div>
-            <div class="clc-inline">
+            <div class="inline">
               <div><strong>GLB URL</strong></div>
-              <div style="display:flex; gap:8px; align-items:center;"><input type="text" class="clc-model-src" value="${escapeHtml(m.src || "")}" style="flex:1;"><button type="button" class="button clc-choose-model">Choose GLB</button></div>
+              <div style="display:flex; gap:8px; align-items:center;"><input type="text" class="model-src" value="${escapeHtml(m.src || "")}" style="flex:1;"><button type="button" class="button choose-model">Choose GLB</button></div>
             </div>
-            <div class="clc-muted">Use Swap Model effects to switch between these.</div>
+            <div class="muted">Use Swap Model effects to switch between these.</div>
           </div>
         </div>
       `);
 
-            $row.find(".clc-model-label").on("input", function () {
+            $row.find(".model-label").on("input", function () {
                 m.label = $(this).val();
                 syncHiddenJSON();
             });
 
-            $row.find(".clc-model-src").on("input", function () {
+            $row.find(".model-src").on("input", function () {
                 m.src = $(this).val();
                 syncHiddenJSON();
             });
 
-            $row.find('.clc-choose-model').on('click', function () {
+            $row.find('.choose-model').on('click', function () {
                 const frame = wp.media({
                     title: 'Select GLB Model',
                     button: { text: 'Use this model' },
@@ -930,7 +930,7 @@ ${node.id !== "root" ? `
                 frame.on('select', function () {
                     const att = frame.state().get('selection').first().toJSON();
                     if (att && att.url) {
-                        $row.find('.clc-model-src').val(att.url).trigger('input');
+                        $row.find('.model-src').val(att.url).trigger('input');
                     }
                 });
 
@@ -938,7 +938,7 @@ ${node.id !== "root" ? `
             });
 
 
-            $row.find(".clc-model-remove").on("click", function () {
+            $row.find(".model-remove").on("click", function () {
                 if (!confirm("Remove this model?")) return;
                 models.splice(idx, 1);
 
@@ -965,17 +965,17 @@ ${node.id !== "root" ? `
         $container.empty();
         const rules = Array.isArray(node.visibleIf) ? node.visibleIf : (node.visibleIf = []);
         if (!rules.length) {
-            $container.append(`<div class="clc-muted"><em>No rules. This choice can appear whenever its parent reveals it.</em></div>`);
+            $container.append(`<div class="muted"><em>No rules. This choice can appear whenever its parent reveals it.</em></div>`);
             return;
         }
 
         const lookup = new Map(allNodes.map(n => [n.id, n.label]));
-        const $rowWrap = $('<div class="clc-pill-row"></div>');
+        const $rowWrap = $('<div class="pill-row"></div>');
 
         rules.forEach((r, idx) => {
             const label = lookup.get(r.targetId) || r.targetId;
             const pill = $(`
-        <span class="clc-pill">
+        <span class="pill">
           <span>${escapeHtml(label)}</span>
           <code>${escapeHtml(r.state)}</code>
           <button type="button" title="Remove">✕</button>
@@ -1002,37 +1002,37 @@ ${node.id !== "root" ? `
 
         const effects = Array.isArray(node.effects) ? node.effects : (node.effects = []);
         if (!effects.length) {
-            $container.append(`<div class="clc-muted"><em>No effects yet. This can just be a category that reveals children.</em></div>`);
+            $container.append(`<div class="muted"><em>No effects yet. This can just be a category that reveals children.</em></div>`);
             return;
         }
 
         effects.forEach((eff, idx) => {
             const $card = $(`
-        <div class="clc-effect-card" data-effect-index="${idx}">
-          <div class="clc-effect-head">
-            <div class="clc-effect-type">${escapeHtml(effectTitle(eff.type))}</div>
-            <div class="clc-muted">${escapeHtml(effectSubtitle(eff))}</div>
-            <div class="clc-effect-actions">
-              <button type="button" class="button-link-delete clc-effect-remove">Remove</button>
+        <div class="effect-card" data-effect-index="${idx}">
+          <div class="effect-head">
+            <div class="effect-type">${escapeHtml(effectTitle(eff.type))}</div>
+            <div class="muted">${escapeHtml(effectSubtitle(eff))}</div>
+            <div class="effect-actions">
+              <button type="button" class="button-link-delete effect-remove">Remove</button>
             </div>
           </div>
-          <div class="clc-effect-body"></div>
+          <div class="effect-body"></div>
         </div>
       `);
 
-            $card.find(".clc-effect-remove").on("click", function () {
+            $card.find(".effect-remove").on("click", function () {
                 effects.splice(idx, 1);
                 syncHiddenJSON();
                 renderEffectsList($container, node);
             });
 
             // Body UI per effect type
-            const $body = $card.find(".clc-effect-body");
+            const $body = $card.find(".effect-body");
             renderEffectEditor($body, node, eff, () => {
                 syncHiddenJSON();
                 // Refresh title/subtitle without re-rendering everything
-                $card.find(".clc-effect-type").text(effectTitle(eff.type));
-                $card.find(".clc-muted").first().text(effectSubtitle(eff));
+                $card.find(".effect-type").text(effectTitle(eff.type));
+                $card.find(".muted").first().text(effectSubtitle(eff));
             });
 
             $container.append($card);
@@ -1082,18 +1082,18 @@ ${node.id !== "root" ? `
             const opts = materials.length
                 ? materials.map(m => `<option value="${escapeHtml(m)}"${m === current ? " selected" : ""}>${escapeHtml(m)}</option>`).join("")
                 : `<option value="">(Scan materials first)</option>`;
-            return `<select class="clc-eff-material">${opts}</select>`;
+            return `<select class="eff-material">${opts}</select>`;
         }
         // TEXTURE
         if (eff.type === "texture") {
             $body.html(`
-<div class="clc-inline">
+<div class="inline">
   <div><strong>Target Materials</strong></div>
   <div>
     ${materials.map(m => `
       <label style="display:block">
         <input type="checkbox"
-               class="clc-eff-material-multi"
+               class="eff-material-multi"
                value="${escapeHtml(m)}"
                ${eff.materials?.includes(m) ? "checked" : ""}>
         ${escapeHtml(m)}
@@ -1102,19 +1102,19 @@ ${node.id !== "root" ? `
   </div>
 </div>
 
-<div class="clc-inline">
+<div class="inline">
   <div><strong>Sync group</strong></div>
   <input type="text"
-         class="clc-eff-sync-group"
+         class="eff-sync-group"
          placeholder="e.g. wood_finish"
          value="${escapeHtml(eff.syncGroup || "")}">
 </div>
 
 
-<div class="clc-inline">
+<div class="inline">
   <div><strong>Texture Type</strong></div>
   <div>
-    <select class="clc-eff-texture-mode">
+    <select class="eff-texture-mode">
       <option value="final"${eff.mode === "final" ? " selected" : ""}>
         Final (already colored)
       </option>
@@ -1126,29 +1126,29 @@ ${node.id !== "root" ? `
 </div>
 
 ${eff.mode === "recolorable" ? `
-<div class="clc-inline">
+<div class="inline">
   <div><strong>Color</strong></div>
-  <div class="clc-row">
-    <input type="color" class="clc-eff-tex-color" value="${escapeHtml(eff.color || "#ffffff")}">
+  <div class="row">
+    <input type="color" class="eff-tex-color" value="${escapeHtml(eff.color || "#ffffff")}">
     <input type="text"
-           class="clc-eff-tex-color-text"
+           class="eff-tex-color-text"
            value="${escapeHtml(eff.color || "#ffffff")}"
            style="max-width:160px;">
-    <span class="clc-muted">Applies tint over grayscale texture.</span>
+    <span class="muted">Applies tint over grayscale texture.</span>
   </div>
 </div>
 ` : ``}
 
-<div class="clc-inline">
+<div class="inline">
   <div><strong>Image</strong></div>
-  <div class="clc-row">
-    <button type="button" class="button clc-eff-pick-img">
+  <div class="row">
+    <button type="button" class="button eff-pick-img">
       ${eff.imageId ? "Change Image" : "Choose Image"}
     </button>
-    <button type="button" class="button clc-eff-clear-img"${eff.imageId ? "" : " disabled"}>
+    <button type="button" class="button eff-clear-img"${eff.imageId ? "" : " disabled"}>
       Clear
     </button>
-    <span class="clc-muted">
+    <span class="muted">
       ${eff.imageId ? ("Media ID: " + eff.imageId) : "No image selected yet"}
     </span>
   </div>
@@ -1157,13 +1157,13 @@ ${eff.mode === "recolorable" ? `
 
 
             // material
-            $body.find(".clc-eff-material").on("change", function () {
+            $body.find(".eff-material").on("change", function () {
                 eff.material = $(this).val() || "";
                 onChange();
             });
 
             // image picker
-            $body.find(".clc-eff-pick-img").on("click", function () {
+            $body.find(".eff-pick-img").on("click", function () {
                 pickMediaImage((att) => {
                     eff.imageId = att.id;
                     eff.url = att.url || "";
@@ -1172,14 +1172,14 @@ ${eff.mode === "recolorable" ? `
                 });
             });
 
-            $body.find(".clc-eff-clear-img").on("click", function () {
+            $body.find(".eff-clear-img").on("click", function () {
                 eff.imageId = null;
                 eff.url = "";
                 onChange();
                 renderEffectEditor($body, node, eff, onChange);
             });
             // mode
-            $body.find(".clc-eff-texture-mode").on("change", function () {
+            $body.find(".eff-texture-mode").on("change", function () {
                 eff.mode = $(this).val() === "recolorable" ? "recolorable" : "final";
 
                 // Ensure color exists when switching to recolorable
@@ -1190,27 +1190,27 @@ ${eff.mode === "recolorable" ? `
             });
 
             // color (only present in recolorable mode)
-            $body.find(".clc-eff-tex-color").on("input", function () {
+            $body.find(".eff-tex-color").on("input", function () {
                 eff.color = $(this).val();
-                $body.find(".clc-eff-tex-color-text").val(eff.color);
+                $body.find(".eff-tex-color-text").val(eff.color);
                 onChange();
             });
 
-            $body.find(".clc-eff-tex-color-text").on("input", function () {
+            $body.find(".eff-tex-color-text").on("input", function () {
                 eff.color = $(this).val();
                 onChange();
             });
 
             // ✅ materials (multi)
-            $body.find(".clc-eff-material-multi").on("change", function () {
-                eff.materials = $body.find(".clc-eff-material-multi:checked")
+            $body.find(".eff-material-multi").on("change", function () {
+                eff.materials = $body.find(".eff-material-multi:checked")
                     .map((_, el) => el.value)
                     .get();
                 onChange();
             });
 
             // ✅ sync group
-            $body.find(".clc-eff-sync-group").on("input", function () {
+            $body.find(".eff-sync-group").on("input", function () {
                 eff.syncGroup = $(this).val() || "";
                 onChange();
             });
@@ -1221,49 +1221,49 @@ ${eff.mode === "recolorable" ? `
         // COLOR
         if (eff.type === "colorize") {
             $body.html(`
-        <div class="clc-inline">
+        <div class="inline">
           <div><strong>Target Material</strong></div>
           <div>${materialSelectHtml(eff.material || "")}</div>
         </div>
 
-        <div class="clc-inline">
+        <div class="inline">
           <div><strong>Color</strong></div>
-          <div class="clc-row">
-            <input type="color" class="clc-eff-color" value="${escapeHtml(eff.color || "#ffffff")}">
-            <input type="text" class="clc-eff-color-text" value="${escapeHtml(eff.color || "#ffffff")}" style="max-width:160px;">
+          <div class="row">
+            <input type="color" class="eff-color" value="${escapeHtml(eff.color || "#ffffff")}">
+            <input type="text" class="eff-color-text" value="${escapeHtml(eff.color || "#ffffff")}" style="max-width:160px;">
           </div>
         </div>
 
-        <div class="clc-muted">
+        <div class="muted">
           Use this with neutral/grayscale textures to produce “Red Leather”, “Black Leather”, etc.
           (Runtime decides best application method.)
         </div>
       `);
 
-            $body.find(".clc-eff-material").on("change", function () {
+            $body.find(".eff-material").on("change", function () {
                 eff.material = $(this).val() || "";
                 onChange();
             });
-            $body.find(".clc-eff-material-multi").on("change", function () {
-                eff.materials = $body.find(".clc-eff-material-multi:checked")
+            $body.find(".eff-material-multi").on("change", function () {
+                eff.materials = $body.find(".eff-material-multi:checked")
                     .map((_, el) => el.value)
                     .get();
 
                 onChange();
             });
 
-            $body.find(".clc-eff-sync-group").on("input", function () {
+            $body.find(".eff-sync-group").on("input", function () {
                 eff.syncGroup = $(this).val().trim() || undefined;
                 onChange();
             });
 
-            $body.find(".clc-eff-color").on("input", function () {
+            $body.find(".eff-color").on("input", function () {
                 eff.color = $(this).val();
-                $body.find(".clc-eff-color-text").val(eff.color);
+                $body.find(".eff-color-text").val(eff.color);
                 onChange();
             });
 
-            $body.find(".clc-eff-color-text").on("input", function () {
+            $body.find(".eff-color-text").on("input", function () {
                 eff.color = $(this).val();
                 onChange();
             });
@@ -1278,19 +1278,19 @@ ${eff.mode === "recolorable" ? `
                 : `<option value="">(No models defined)</option>`;
 
             $body.html(`
-        <div class="clc-inline">
+        <div class="inline">
           <div><strong>Swap To</strong></div>
           <div>
-            <select class="clc-eff-model">${modelOpts}</select>
+            <select class="eff-model">${modelOpts}</select>
           </div>
         </div>
 
-        <div class="clc-muted">
+        <div class="muted">
           Swap the GLB behind the scenes (base, back, size variants, etc).
         </div>
       `);
 
-            $body.find(".clc-eff-model").on("change", function () {
+            $body.find(".eff-model").on("change", function () {
                 eff.modelId = $(this).val() || "";
                 onChange();
             });
@@ -1301,17 +1301,17 @@ ${eff.mode === "recolorable" ? `
         // PRICE
         if (eff.type === "price") {
             $body.html(`
-        <div class="clc-inline">
+        <div class="inline">
           <div><strong>Price Change</strong></div>
-          <div class="clc-row">
+          <div class="row">
             <span>$</span>
-            <input type="number" step="0.01" class="clc-eff-delta" value="${escapeHtml(eff.delta ?? 0)}" style="max-width:160px;">
-            <span class="clc-muted">(positive or negative)</span>
+            <input type="number" step="0.01" class="eff-delta" value="${escapeHtml(eff.delta ?? 0)}" style="max-width:160px;">
+            <span class="muted">(positive or negative)</span>
           </div>
         </div>
       `);
 
-            $body.find(".clc-eff-delta").on("input", function () {
+            $body.find(".eff-delta").on("input", function () {
                 eff.delta = parseFloat($(this).val()) || 0;
                 onChange();
             });
@@ -1322,19 +1322,19 @@ ${eff.mode === "recolorable" ? `
         // SHOW/HIDE MATERIAL
         if (eff.type === "showMaterial" || eff.type === "hideMaterial") {
             $body.html(`
-        <div class="clc-inline">
+        <div class="inline">
           <div><strong>Target Material</strong></div>
           <div>${materialSelectHtml(eff.material || "")}</div>
         </div>
 
-        <div class="clc-muted">
+        <div class="muted">
           ${eff.type === "hideMaterial"
                     ? "Hide this material when selected."
                     : "Show this material when selected."}
         </div>
       `);
 
-            $body.find(".clc-eff-material").on("change", function () {
+            $body.find(".eff-material").on("change", function () {
                 eff.material = $(this).val() || "";
                 onChange();
             });
@@ -1343,7 +1343,7 @@ ${eff.mode === "recolorable" ? `
         }
 
         // Fallback
-        $body.html(`<div class="clc-muted">Unknown effect type.</div>`);
+        $body.html(`<div class="muted">Unknown effect type.</div>`);
     }
 
     // -----------------------------
@@ -1351,20 +1351,20 @@ ${eff.mode === "recolorable" ? `
     // -----------------------------
     $(document).ready(function () {
         // Hide legacy single-GLB URL field if present (models are handled via the Models editor).
-        const $legacy = $('#clc_model_url');
+        const $legacy = $('#model_url');
         if ($legacy.length) {
             $legacy.hide();
             $legacy.next('button').hide();
             $legacy.closest('tr').hide();
             $legacy.closest('p').hide();
-            $legacy.closest('.clc-field').hide();
+            $legacy.closest('.field').hide();
         }
 
         setupModelPicker();
-        const root = $("#clc-builder-root");
+        const root = $("#builder-root");
         if (!root.length) return;
 
-        const rawStr = $("#clc_config_json").val();
+        const rawStr = $("#config_json").val();
         const raw = safeParseJSON(rawStr);
         CFG = ensureConfig(raw);
 
@@ -1372,7 +1372,7 @@ ${eff.mode === "recolorable" ? `
         SELECTED_NODE_ID = "root";
 
         // keep base price synced
-        $("#clc_base_price").on("input", function () {
+        $("#base_price").on("input", function () {
             CFG.basePrice = getBasePrice();
             syncHiddenJSON();
         });
@@ -1393,17 +1393,17 @@ ${eff.mode === "recolorable" ? `
     let EXPANDED_NODE_IDS = new Set();
     function captureExpandedNodes() {
         EXPANDED_NODE_IDS.clear();
-        $(".clc-node.expanded").each(function () {
+        $(".node.expanded").each(function () {
             const id = $(this).data("node-id");
             if (id) EXPANDED_NODE_IDS.add(id);
         });
     }
     function restoreExpandedNodes() {
         EXPANDED_NODE_IDS.forEach(id => {
-            const $node = $(`.clc-node[data-node-id="${CSS.escape(id)}"]`);
+            const $node = $(`.node[data-node-id="${CSS.escape(id)}"]`);
             if ($node.length) {
                 $node.addClass("expanded");
-                $node.find(".clc-node-toggle").text("▾");
+                $node.find(".node-toggle").text("▾");
             }
         });
     }
@@ -1597,7 +1597,7 @@ ${eff.mode === "recolorable" ? `
         // If the page ever has >1 model-viewer, this helps.
         if (!ADMIN_VIEWER) {
             ADMIN_VIEWER =
-                document.getElementById("clc-admin-model-viewer") ||
+                document.getElementById("admin-model-viewer") ||
                 document.querySelector("model-viewer");
         }
 

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Registers the 3D Configurator custom post type.
  */

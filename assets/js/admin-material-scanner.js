@@ -7,13 +7,13 @@
      * - Manual scan button works exactly like before (same viewer, scan, render).
      * - Auto-scan runs automatically when the builder updates config JSON, and builds a UNION of materials
      *   across all CFG.models using the SAME preview <model-viewer> (sequentially, with safe timeouts).
-     * - Does not rely on the legacy #clc_model_url field (it may be hidden).
+     * - Does not rely on the legacy #model_url field (it may be hidden).
      */
 
     // -----------------------------
     // Global registry (shared)
     // -----------------------------
-    window.CLC_MATERIALS = window.CLC_MATERIALS || {
+    window.MATERIALS = window.MATERIALS || {
         list: [],
         original: new Map()
     };
@@ -24,7 +24,7 @@
     // Utilities
     // -----------------------------
     function readCfg() {
-        const raw = $('#clc_config_json').val();
+        const raw = $('#config_json').val();
         if (!raw) return null;
         try { return JSON.parse(raw); } catch (e) { return null; }
     }
@@ -45,7 +45,7 @@
         if (!mv || !mv.model || !mv.model.materials) return;
 
         mv.model.materials.forEach(mat => {
-            const orig = window.CLC_MATERIALS.original.get(mat.name);
+            const orig = window.MATERIALS.original.get(mat.name);
             if (!orig) return;
 
             if (mat.pbrMetallicRoughness && orig.pbr) {
@@ -82,15 +82,15 @@
         const mats = viewer.model.materials;
         const names = new Set();
 
-        if (clearOriginal) window.CLC_MATERIALS.original.clear();
+        if (clearOriginal) window.MATERIALS.original.clear();
 
         mats.forEach(m => {
             names.add(m.name);
 
             if (m.pbrMetallicRoughness) {
                 // Capture original (only if not already captured)
-                if (!window.CLC_MATERIALS.original.has(m.name)) {
-                    window.CLC_MATERIALS.original.set(m.name, {
+                if (!window.MATERIALS.original.has(m.name)) {
+                    window.MATERIALS.original.set(m.name, {
                         pbr: {
                             baseColor: [...m.pbrMetallicRoughness.baseColorFactor]
                         },
@@ -107,7 +107,7 @@
     // UI Rendering
     // -----------------------------
     function renderMaterialsUI(materials) {
-        const $wrap = $('#clc-materials-list');
+        const $wrap = $('#materials-list');
         if (!$wrap.length) return;
 
         if (!materials || !materials.length) {
@@ -115,13 +115,13 @@
             return;
         }
 
-        const $grid = $('<div class="clc-material-grid"></div>');
+        const $grid = $('<div class="material-grid"></div>');
 
         materials.forEach(name => {
             const safe = String(name);
             const $card = $(
-                '<div class="clc-material-card" data-mat="' + safe.replaceAll('"', '&quot;') + '">' +
-                '  <div class="clc-material-name">' + safe + '</div>' +
+                '<div class="material-card" data-mat="' + safe.replaceAll('"', '&quot;') + '">' +
+                '  <div class="material-name">' + safe + '</div>' +
                 '</div>'
             );
 
@@ -132,10 +132,10 @@
 
         const $style = $(
             '<style>' +
-            '.clc-material-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}' +
-            '.clc-material-card{padding:10px;border:1px solid #ddd;border-radius:8px;background:#fafafa;cursor:default;transition:all .15s ease;}' +
-            '.clc-material-card:hover{background:#f0f7ff;border-color:#2271b1;}' +
-            '.clc-material-name{font-family:monospace;font-size:12px;word-break:break-all;}' +
+            '.material-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}' +
+            '.material-card{padding:10px;border:1px solid #ddd;border-radius:8px;background:#fafafa;cursor:default;transition:all .15s ease;}' +
+            '.material-card:hover{background:#f0f7ff;border-color:#2271b1;}' +
+            '.material-name{font-family:monospace;font-size:12px;word-break:break-all;}' +
             '</style>'
         );
 
@@ -147,7 +147,7 @@
         );
 
         // expose list
-        window.CLC_MATERIALS.list = materials.slice();
+        window.MATERIALS.list = materials.slice();
     }
 
     // -----------------------------
@@ -214,7 +214,7 @@
 
         const token = ++AUTO_SCAN_TOKEN;
         const models = getModelsFromConfigJSON();
-        const $wrap = $('#clc-materials-list');
+        const $wrap = $('#materials-list');
 
         if (!models.length) {
             $wrap.html('<em>No model URLs yet — add a model, then materials will auto-scan.</em>');
@@ -226,7 +226,7 @@
 
         const union = new Set();
         // Do NOT clear original across models; we want to preserve the first time we see each mat name.
-        window.CLC_MATERIALS.original.clear();
+        window.MATERIALS.original.clear();
 
         for (let i = 0; i < models.length; i++) {
             const m = models[i];
@@ -241,7 +241,7 @@
                 const names = await scanUrlOnMainViewer(m.src, { clearOriginal: false });
                 names.forEach(n => union.add(n));
             } catch (e) {
-                console.warn('[CLC Scanner] Failed to scan model', m.src, e);
+                console.warn('[Scanner] Failed to scan model', m.src, e);
             }
         }
 
@@ -258,11 +258,11 @@
     // Wiring
     // -----------------------------
     function setupScanner() {
-        mv = document.getElementById('clc-admin-model-viewer');
+        mv = document.getElementById('admin-model-viewer');
         if (!mv) return;
 
-        const $scanBtn = $('#clc-scan-materials');
-        const $legacyUrlInput = $('#clc_model_url'); // may be hidden/legacy
+        const $scanBtn = $('#scan-materials');
+        const $legacyUrlInput = $('#model_url'); // may be hidden/legacy
 
         // Manual scan button
         $scanBtn.on('click', async function () {
@@ -279,32 +279,32 @@
             }
 
             $scanBtn.prop('disabled', true);
-            $('#clc-materials-list').html('<em>Scanning model…</em>');
+            $('#materials-list').html('<em>Scanning model…</em>');
 
             try {
                 await scanUrlOnMainViewer(url, { clearOriginal: true });
-                const list = window.CLC_MATERIALS.list = Array.from(new Set(window.CLC_MATERIALS.list)).sort();
+                const list = window.MATERIALS.list = Array.from(new Set(window.MATERIALS.list)).sort();
                 // scanUrlOnMainViewer returns names, but we also want to render from current scan
                 const names = await scanMaterials(mv, { clearOriginal: false });
                 renderMaterialsUI(names);
             } catch (e) {
                 console.error(e);
-                $('#clc-materials-list').html('<em>Error loading model.</em>');
+                $('#materials-list').html('<em>Error loading model.</em>');
             } finally {
                 $scanBtn.prop('disabled', false);
             }
         });
 
         // Auto-scan whenever the builder writes config JSON
-        $(document).on('clc:config-updated', scheduleAutoScan);
+        $(document).on('config-updated', scheduleAutoScan);
 
         // Reverse highlight (viewer → UI)
         mv.addEventListener('material-change', (e) => {
             resetMaterialsVisual();
             const n = e && e.detail && e.detail.material ? e.detail.material.name : null;
             if (!n) return;
-            $('.clc-material-card').removeClass('active');
-            $('.clc-material-card[data-mat="' + n.replaceAll('"', '&quot;') + '"]').addClass('active');
+            $('.material-card').removeClass('active');
+            $('.material-card[data-mat="' + n.replaceAll('"', '&quot;') + '"]').addClass('active');
         });
     }
 

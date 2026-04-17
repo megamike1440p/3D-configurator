@@ -64,6 +64,7 @@ class CONFIGURATOR_Assets
 
         $screen = get_current_screen();
         if (!$screen || $screen->post_type !== 'configurator') {
+            wp_enqueue_media();
             return;
         }
 

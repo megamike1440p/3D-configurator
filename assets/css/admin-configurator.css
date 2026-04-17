@@ -1,20 +1,20 @@
 /*
  * New structure for two-column layout: Builder (left) and Viewer (right)
  */
-.clc-configurator-meta-box-content {
+.configurator-meta-box-content {
     display: flex;
     gap: 20px;
     /* Space between columns */
 }
 
-.clc-builder-column {
+.builder-column {
     flex: 1;
     /* Takes up available space */
     min-width: 400px;
     /* Ensure builder area is readable */
 }
 
-.clc-viewer-column {
+.viewer-column {
     width: 25%;
     /* Allocate specific width to the viewer */
     position: sticky;
@@ -28,7 +28,7 @@
 }
 
 /* Ensure the model-viewer element fills its sticky container */
-#clc-admin-viewer-wrap {
+#admin-viewer-wrap {
     height: 100%;
     background: #eee;
     border: 1px solid #ccc;
@@ -36,49 +36,49 @@
     /* Remove bottom margin from this element */
 }
 
-#clc-admin-model-viewer {
+#admin-model-viewer {
     width: 100%;
     height: 100%;
 }
 
 /* Original styles below */
 
-#clc-builder-root {
+#builder-root {
     border: 1px solid #ddd;
     padding: 10px;
     background: #fafafa;
     margin-top: 10px;
 }
 
-.clc-admin-cat-order {
+.admin-cat-order {
     margin: 0 0 10px 0;
     padding-left: 20px;
 }
 
-.clc-admin-cats-wrap {
+.admin-cats-wrap {
     margin-top: 10px;
 }
 
-.clc-admin-cat-block {
+.admin-cat-block {
     border: 1px solid #ddd;
     padding: 10px;
     margin-bottom: 10px;
     background: #fff;
 }
 
-.clc-admin-cat-header {
+.admin-cat-header {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
 }
 
-.clc-admin-cat-fields p {
+.admin-cat-fields p {
     margin: 4px 0;
 }
 
-.clc-admin-option-row,
-.clc-admin-type-block,
-.clc-admin-color-row {
+.admin-option-row,
+.admin-type-block,
+.admin-color-row {
     border: 1px solid #eee;
     padding: 8px;
     margin: 6px 0;
@@ -86,7 +86,7 @@
 }
 
 /* Materials scan list */
-#clc-materials-list {
+#materials-list {
     border: 1px solid #ddd;
     padding: 8px;
     background: #fcfcfc;
@@ -95,13 +95,13 @@
     overflow-y: auto;
 }
 
-#clc-materials-list code {
+#materials-list code {
     background: #f2f2f2;
     padding: 1px 4px;
     border-radius: 3px;
 }
 
-.clc-materials-ul {
+.materials-ul {
     margin: 4px 0;
     /* Use no list style and padding for clean look */
     list-style-type: none;
@@ -109,7 +109,7 @@
 }
 
 /* Make list items interactive */
-.clc-materials-ul li {
+.materials-ul li {
     padding: 4px 8px;
     cursor: pointer;
     margin-bottom: 2px;
@@ -118,8 +118,8 @@
 }
 
 /* Highlighted material in the list */
-.clc-materials-ul li:hover,
-.clc-materials-ul li.highlight {
+.materials-ul li:hover,
+.materials-ul li.highlight {
     /* New class for model hover */
     background-color: #e6f7ff;
     /* Light blue background on hover */
@@ -127,6 +127,6 @@
 }
 
 /* Fix for multi-select dropdown */
-.clc-material-selector {
+.material-selector {
     min-height: 100px;
 }

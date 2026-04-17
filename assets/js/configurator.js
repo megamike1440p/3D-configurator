@@ -24,21 +24,21 @@
 
     function safeJSON(str) { try { return JSON.parse(str); } catch { return null; } }
 
-    const CLC_DEBUG = true;
+    const CONFIG_DEBUG = true;
 
     function dbg(...args) {
-        if (CLC_DEBUG) console.log(...args);
+        if (CONFIG_DEBUG) console.log(...args);
     }
 
     function dumpMat(name) {
         const m = MATERIAL_CACHE[name];
         if (!m || !m.pbrMetallicRoughness) {
-            dbg("[CLC] dumpMat: material missing or no PBR", name, m);
+            dbg("dumpMat: material missing or no PBR", name, m);
             return;
         }
         const pbr = m.pbrMetallicRoughness;
 
-        dbg("[CLC] dumpMat:", name, {
+        dbg("dumpMat:", name, {
             alphaMode: m.alphaMode,
             baseColorFactor: pbr.baseColorFactor,
             hasBaseColorTex: !!pbr.baseColorTexture,
@@ -92,15 +92,15 @@
     // -----------------------------
     // Debug exposure
     // -----------------------------
-    window.CLC = window.CLC || {};
-    window.CLC.dumpMat = dumpMat;
-    window.CLC.listMats = () => Object.keys(MATERIAL_CACHE);
-    window.CLC.mv = () => MV;
+    window.CONFIG = window.CONFIG || {};
+    window.CONFIG.dumpMat = dumpMat;
+    window.CONFIGC.listMats = () => Object.keys(MATERIAL_CACHE);
+    window.CONFIG.mv = () => MV;
     // -----------------------------
     // Init
     // -----------------------------
     document.addEventListener("DOMContentLoaded", () => {
-        const root = document.querySelector('[data-clc-configurator="1"]') || document.querySelector("[data-clc-configurator]");
+        const root = document.querySelector('[data-configurator="1"]') || document.querySelector("[data-configurator]");
         if (!root) return;
 
         CFG = safeJSON(root.getAttribute("data-config") || root.dataset.config);
@@ -108,7 +108,7 @@
         // Bootstrap brand-new configurators (empty config JSON)
         if (!CFG || !CFG.root) {
             CFG = {
-                schema: "clc-configurator",
+                schema: "configurator",
                 basePrice: 0,
                 models: [],
                 root: {
@@ -134,10 +134,10 @@
       <div class="hm-configurator">
         <div class="hm-viewer"></div>
         <div class="hm-side">
-          <div class="clc-price-bar">
-            <div class="clc-price-value">$${Number(CFG.basePrice || 0).toFixed(2)}</div>
+          <div class="price-bar">
+            <div class="price-value">$${Number(CFG.basePrice || 0).toFixed(2)}</div>
           </div>
-          <div class="clc-ui"></div>
+          <div class="ui"></div>
         </div>
       </div>
     `;
@@ -154,9 +154,9 @@
         const viewerWrap = $(".hm-viewer", root);
 
         const overlay = document.createElement("div");
-        overlay.className = "clc-loading";
+        overlay.className = "loading";
         overlay.innerHTML = `
-          <div class="clc-loading-inner">
+          <div class="loading-inner">
             <strong>Loading models…</strong><br>
             <span>Preparing instant swaps</span>
           </div>
@@ -323,7 +323,7 @@
     // UI Rendering
     // -----------------------------
     function renderUI() {
-        const uiRoot = document.querySelector(".clc-ui");
+        const uiRoot = document.querySelector(".ui");
         if (!uiRoot) return;
         uiRoot.innerHTML = "";
 
@@ -361,7 +361,7 @@
 
             const btn = document.createElement("div");
             btn.className = "hm-option";
-                        const hasThumb = !!(child.thumbUrl || child.thumbnailUrl || child.thumb || child.thumbnail);
+            const hasThumb = !!(child.thumbUrl || child.thumbnailUrl || child.thumb || child.thumbnail);
             const thumbUrl = child.thumbUrl || child.thumbnailUrl || (child.thumb && child.thumb.url) || (child.thumbnail && child.thumbnail.url) || "";
             if (hasThumb) btn.classList.add("has-thumb");
             btn.innerHTML = hasThumb
@@ -374,7 +374,7 @@
                 : `
                         <div class="hm-option-label">${child.label || child.id}</div>
                     `;
-btn.dataset.id = child.id;
+            btn.dataset.id = child.id;
 
             btn.addEventListener("click", () => {
                 toggleSelection(child, node);
@@ -613,10 +613,10 @@ btn.dataset.id = child.id;
 
     function applyEffects(effects, epoch) {
         if (!effects?.length) return;
-        dbg("[CLC] applyEffects", effects);
+        dbg("applyEffects", effects);
 
         effects.forEach(eff => {
-            dbg("[CLC] effect", eff);
+            dbg("effect", eff);
             switch (eff.type) {
                 case "price":
                     PRICE_DELTA += Number(eff.delta || 0);
@@ -746,7 +746,7 @@ btn.dataset.id = child.id;
 
         const src = MODEL_SRC_BY_ID.get(modelId) || (CFG.models || []).find(m => m.id === modelId)?.src || "";
         if (!src) {
-            dbg("[CLC] swapModelById: missing src for", modelId);
+            dbg("swapModelById: missing src for", modelId);
             return;
         }
 
@@ -795,7 +795,7 @@ btn.dataset.id = child.id;
     function updatePrice() {
         const base = Number(CFG.basePrice || 0);
         const total = base + PRICE_DELTA;
-        const el = $(".clc-price-value");
+        const el = $(".price-value");
         if (el) el.textContent = `$${total.toFixed(2)}`;
     }
     function isNodeActive(node) {
