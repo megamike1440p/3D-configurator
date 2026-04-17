@@ -20,11 +20,32 @@ class CONFIGURATOR_Assets
         add_filter('script_loader_tag', [self::class, 'add_module_attribute'], 10, 3);
         add_action('wp_enqueue_scripts', [self::class, 'frontend']);
         add_action('admin_enqueue_scripts', [self::class, 'admin']);
+        add_filter('upload_mimes', function ($mimes) {
+            // GLB (binary glTF)
+            $mimes['glb'] = 'model/gltf-binary';
+
+            // GLTF (JSON-based)
+            $mimes['gltf'] = 'model/gltf+json';
+
+            // Optional: OBJ, FBX if needed
+            $mimes['obj'] = 'text/plain';
+            $mimes['fbx'] = 'application/octet-stream';
+
+            return $mimes;
+        });
     }
 
     public static function add_module_attribute($tag, $handle, $src)
     {
-        if (in_array($handle, ['configurator-model-viewer', 'configurator-model-viewer-admin'])) {
+        if (
+            in_array($handle, [
+                'configurator-model-viewer',
+                'configurator-model-viewer-admin',
+                'configurator-js',
+                'configurator-material-scanner',
+                'configurator-admin-js',
+            ], true)
+        ) {
             return '<script type="module" src="' . esc_url($src) . '" id="' . $handle . '-js"></script>';
         }
         return $tag;
@@ -42,7 +63,7 @@ class CONFIGURATOR_Assets
 
         wp_enqueue_script(
             'configurator-js',
-            CONFIGURATOR_URL . 'assets/js/configurator.js',
+            CONFIGURATOR_URL . 'assets/js/configurator/configurator.js',
             ['configurator-model-viewer'],
             CONFIGURATOR_VERSION,
             true
@@ -63,7 +84,7 @@ class CONFIGURATOR_Assets
         }
 
         $screen = get_current_screen();
-        if (!$screen || $screen->post_type !== 'configurator') {
+        if (!$screen || $screen->post_type !== CONFIGURATOR_POST_TYPE) {
             wp_enqueue_media();
             return;
         }
@@ -83,7 +104,7 @@ class CONFIGURATOR_Assets
 
         wp_enqueue_script(
             'configurator-material-scanner',
-            CONFIGURATOR_URL . 'assets/js/admin-material-scanner.js',
+            CONFIGURATOR_URL . 'assets/js/scanner/admin-material-scanner.js',
             ['jquery', 'configurator-model-viewer-admin'],
             CONFIGURATOR_VERSION,
             true
@@ -91,10 +112,23 @@ class CONFIGURATOR_Assets
 
         wp_enqueue_script(
             'configurator-admin-js',
-            CONFIGURATOR_URL . 'assets/js/admin-configurator.js',
+            CONFIGURATOR_URL . 'assets/js/admin/admin-configurator.js',
             ['jquery', 'configurator-material-scanner'],
             CONFIGURATOR_VERSION,
             true
         );
     }
 }
+add_filter('upload_mimes', function ($mimes) {
+    // GLB (binary glTF)
+    $mimes['glb'] = 'model/gltf-binary';
+
+    // GLTF (JSON-based)
+    $mimes['gltf'] = 'model/gltf+json';
+
+    // Optional: OBJ, FBX if needed
+    $mimes['obj'] = 'text/plain';
+    $mimes['fbx'] = 'application/octet-stream';
+
+    return $mimes;
+});

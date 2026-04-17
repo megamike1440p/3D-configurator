@@ -101,6 +101,33 @@
     border-radius: 3px;
 }
 
+.material-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.material-card {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fafafa;
+    cursor: default;
+    transition: all 0.15s ease;
+}
+
+.material-card:hover,
+.material-card.active {
+    background: #f0f7ff;
+    border-color: #2271b1;
+}
+
+.material-name {
+    font-family: monospace;
+    font-size: 12px;
+    word-break: break-all;
+}
+
 .materials-ul {
     margin: 4px 0;
     /* Use no list style and padding for clean look */

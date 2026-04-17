@@ -7,7 +7,7 @@ class CONFIGURATOR_Meta_Box
     public static function init()
     {
         add_action('add_meta_boxes', [self::class, 'register']);
-        add_action('save_post_configurator', [self::class, 'save']);
+        add_action('save_post_' . CONFIGURATOR_POST_TYPE, [self::class, 'save']);
     }
 
     public static function register()
@@ -16,7 +16,7 @@ class CONFIGURATOR_Meta_Box
             'configurator_meta',
             'Configurator Settings',
             [self::class, 'render'],
-            'configurator',
+            CONFIGURATOR_POST_TYPE,
             'normal',
             'high'
         );
@@ -96,7 +96,7 @@ class CONFIGURATOR_Meta_Box
             return;
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)
             return;
-        if (get_post_type($post_id) !== 'configurator')
+        if (get_post_type($post_id) !== CONFIGURATOR_POST_TYPE)
             return;
 
         if (isset($_POST['_configurator_model_url'])) {

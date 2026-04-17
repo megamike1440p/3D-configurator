@@ -18,7 +18,7 @@ class CONFIGURATOR_CPT
             'edit_item' => 'Edit 3D Configurator',
         ];
 
-        register_post_type('3d-configurator', [ //the internal WordPress identifier for that content type, post_type = configurator all queries must use configuratoradmin screens are tied to it
+        register_post_type(CONFIGURATOR_POST_TYPE, [
             'labels' => $labels,
             'public' => false,
             'show_ui' => true,

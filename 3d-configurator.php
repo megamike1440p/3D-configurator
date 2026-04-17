@@ -13,6 +13,7 @@ if (!defined('ABSPATH'))
 define('CONFIGURATOR_PATH', plugin_dir_path(__FILE__));
 define('CONFIGURATOR_URL', plugin_dir_url(__FILE__));
 define('CONFIGURATOR_VERSION', '1.1.1');
+define('CONFIGURATOR_POST_TYPE', '3d-configurator');
 
 require_once CONFIGURATOR_PATH . 'includes/class-assets.php';
 require_once CONFIGURATOR_PATH . 'includes/class-cpt.php';

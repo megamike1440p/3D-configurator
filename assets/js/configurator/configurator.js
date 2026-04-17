@@ -9,13 +9,13 @@
  *    without creating circular imports
  * 4. Boots on DOMContentLoaded
  */
-import { state } from './configurator/state.js';
-import { $, safeJSON } from './configurator/utils.js';
-import { captureOriginalMaterials, snapshotOriginalMaterials, dumpMat, resetMaterials } from './configurator/material-manager.js';
-import { warmLoadOne, swapModelById } from './configurator/model-manager.js';
-import { applyDefaults } from './configurator/selection-manager.js';
-import { collectSyncState, applyEffectsPass, computeDesiredModelId } from './configurator/effects-engine.js';
-import { renderUI, updateUIStates, updatePrice } from './configurator/ui-renderer.js';
+import { state } from './state.js';
+import { $, safeJSON } from './utils.js';
+import { captureOriginalMaterials, snapshotOriginalMaterials, dumpMat, resetMaterials } from './material-manager.js';
+import { warmLoadOne, swapModelById } from './model-manager.js';
+import { applyDefaults } from './selection-manager.js';
+import { collectSyncState, applyEffectsPass, computeDesiredModelId } from './effects-engine.js';
+import { renderUI, updateUIStates, updatePrice } from './ui-render.js';
 
 // -----------------------------
 // Top-level orchestrator
