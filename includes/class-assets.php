@@ -84,6 +84,8 @@ class CONFIGURATOR_Assets
             return;
         }
 
+        wp_enqueue_media();
+
         wp_enqueue_style(
             'configurator-admin-css',
             CONFIGURATOR_URL . 'assets/css/admin-configurator.css',
