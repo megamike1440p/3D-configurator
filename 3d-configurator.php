@@ -1,7 +1,9 @@
 <?php
 /**
  * Plugin Name: 3D Configurator
- * Description: Model-Viewer based 3D product configurator with Elementor, WooCommerce integration, snapshots, and an admin GUI builder. A state-driven configurator where UI, 3D, and price all react to the same source of truth. 
+ * Description: Model-Viewer based 3D product configurator with Elementor, 
+ * WooCommerce integration, snapshots, and an admin GUI builder. 
+ * A state-driven configurator where UI, 3D, and price all react to the same source of truth. 
  * Version: 1.1.1
  * Author: megamike1080 & evilliza
  * entry point for plug in to load

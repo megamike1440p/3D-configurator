@@ -10,7 +10,6 @@
  * (which triggers swaps).
  */
 export const state = {
-    CONFIGURATOR_URL: null,
     MV: null,
     CURRENT_MODEL_ID: null,
 

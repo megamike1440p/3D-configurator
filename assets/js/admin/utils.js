@@ -22,7 +22,15 @@ export function uid(prefix) {
 }
 
 export function hexToRGBA(hex) {
+    if (!hex || typeof hex !== "string") {
+        return [1, 1, 1, 1];
+    }
+
     const c = hex.replace("#", "");
+    if (!/^[0-9a-fA-F]{6}$/.test(c)) {
+        return [1, 1, 1, 1];
+    }
+
     const bigint = parseInt(c, 16);
     return [
         ((bigint >> 16) & 255) / 255,

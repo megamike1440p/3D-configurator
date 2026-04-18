@@ -43,11 +43,12 @@ class CONFIGURATOR_Shortcode
         ?>
         <div id="<?php echo esc_attr($wrapper_id); ?>" class="configurator-root" data-configurator="1"
             data-config-id="<?php echo esc_attr($config_id); ?>" data-model="<?php echo esc_url($model_url); ?>"
-            data-config="<?php echo esc_attr(wp_json_encode(json_decode($config_json))); ?>"
+            data-config="<?php echo esc_attr($config_json); ?>"
             data-base-price="<?php echo esc_attr($base_price); ?>" data-product-id="<?php echo esc_attr($product_id); ?>"
             data-show-price="<?php echo esc_attr($atts['show_price']); ?>"
             data-show-cart="<?php echo esc_attr($atts['show_cart']); ?>"
-            data-show-snapshot="<?php echo esc_attr($atts['show_snapshot_button']); ?>">
+            data-show-snapshot="<?php echo esc_attr($atts['show_snapshot_button']); ?>"
+            data-cart-nonce="<?php echo esc_attr(wp_create_nonce('configurator_add_to_cart')); ?>">
         </div>
         <?php
 

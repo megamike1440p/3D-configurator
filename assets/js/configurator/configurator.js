@@ -13,13 +13,14 @@ import { state } from './state.js';
 import { $, safeJSON } from './utils.js';
 import { captureOriginalMaterials, snapshotOriginalMaterials, dumpMat, resetMaterials } from './material-manager.js';
 import { warmLoadOne, swapModelById } from './model-manager.js';
-import { applyDefaults } from './selection-manager.js';
+import { applyDefaults, findParent } from './selection-manager.js';
 import { collectSyncState, applyEffectsPass, computeDesiredModelId } from './effects-engine.js';
 import { renderUI, updateUIStates, updatePrice } from './ui-render.js';
 
 // -----------------------------
 // Top-level orchestrator
 // -----------------------------
+let syncCartForm = null;
 
 function updateAll() {
     // Check for a model swap first — avoid applying effects mid-pass
@@ -38,9 +39,9 @@ function updateAll() {
     applyEffectsPass(syncState);          // PASS 2: resolve sinks, apply effects
 
     updatePrice();
-    updateUIStates();
     renderUI();
     updateUIStates();
+    if (syncCartForm) syncCartForm();
 }
 
 // Inject into shared state so sub-modules (e.g. model-manager) can call it
@@ -59,9 +60,7 @@ window.MATERIALS.mv = () => state.MV;
 // Boot
 // -----------------------------
 document.addEventListener("DOMContentLoaded", () => {
-    const root =
-        document.querySelector('[data-configurator="1"]') ||
-        document.querySelector("[data-configurator]");
+    const root = document.querySelector("[data-configurator]");
     if (!root) return;
 
     state.CFG = safeJSON(root.getAttribute("data-config") || root.dataset.config);
@@ -98,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         applyDefaults(state.CFG.root);
         renderUI();
+        syncCartForm = createCartFormSync(root);
         updateAll();
     })();
 });
@@ -112,12 +112,7 @@ async function warmLoadAllModels() {
 
     if (!first?.src) return;
 
-    await warmLoadOne(first.src);
-    captureOriginalMaterials();
-    state.ORIGINAL_MATERIALS_BY_MODEL.set(first.id, snapshotOriginalMaterials());
-
-    for (const m of models) {
-        if (m.id === first.id) continue;
+    for (const m of models.slice(1)) {
         await warmLoadOne(m.src);
         captureOriginalMaterials();
         state.ORIGINAL_MATERIALS_BY_MODEL.set(m.id, snapshotOriginalMaterials());
@@ -171,4 +166,72 @@ function buildLoadingOverlay() {
         </div>
     `;
     return overlay;
+}
+
+function createCartFormSync(root) {
+    if (!root || root.dataset.showCart !== "yes") return null;
+
+    const form = document.querySelector("form.cart");
+    if (!form) return null;
+
+    const ensureHiddenInput = (name) => {
+        let input = form.querySelector(`input[name="${name}"]`);
+        if (!input) {
+            input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            form.appendChild(input);
+        }
+        return input;
+    };
+
+    const nonceInput = ensureHiddenInput("configurator_nonce");
+    const configInput = ensureHiddenInput("config_data");
+    const priceInput = ensureHiddenInput("price_delta");
+
+    const sync = () => {
+        nonceInput.value = root.dataset.cartNonce || "";
+        configInput.value = JSON.stringify(buildCartPayload(root));
+        priceInput.value = String(Number(state.PRICE_DELTA || 0));
+    };
+
+    form.addEventListener("submit", sync);
+    sync();
+
+    return sync;
+}
+
+function buildCartPayload(root) {
+    return {
+        config_id: Number(root.dataset.configId || 0),
+        selected_node_ids: Array.from(state.SELECTIONS),
+        selections: buildSelectionSummary(),
+    };
+}
+
+function buildSelectionSummary() {
+    const summary = {};
+
+    state.SELECTIONS.forEach((nodeId) => {
+        const node = findNodeById(nodeId);
+        if (!node || node.id === "root") return;
+
+        const parent = findParent(node.id);
+        const key = parent?.label || parent?.id || node.label || node.id;
+        summary[key] = node.label || node.id;
+    });
+
+    return summary;
+}
+
+function findNodeById(id, node = state.CFG?.root) {
+    if (!node) return null;
+    if (node.id === id) return node;
+
+    for (const child of (node.children || [])) {
+        const found = findNodeById(id, child);
+        if (found) return found;
+    }
+
+    return null;
 }

@@ -20,19 +20,7 @@ class CONFIGURATOR_Assets
         add_filter('script_loader_tag', [self::class, 'add_module_attribute'], 10, 3);
         add_action('wp_enqueue_scripts', [self::class, 'frontend']);
         add_action('admin_enqueue_scripts', [self::class, 'admin']);
-        add_filter('upload_mimes', function ($mimes) {
-            // GLB (binary glTF)
-            $mimes['glb'] = 'model/gltf-binary';
-
-            // GLTF (JSON-based)
-            $mimes['gltf'] = 'model/gltf+json';
-
-            // Optional: OBJ, FBX if needed
-            $mimes['obj'] = 'text/plain';
-            $mimes['fbx'] = 'application/octet-stream';
-
-            return $mimes;
-        });
+        add_filter('upload_mimes', [self::class, 'add_upload_mimes']);
     }
 
     public static function add_module_attribute($tag, $handle, $src)
@@ -42,8 +30,6 @@ class CONFIGURATOR_Assets
                 'configurator-model-viewer',
                 'configurator-model-viewer-admin',
                 'configurator-js',
-                'configurator-material-scanner',
-                'configurator-admin-js',
             ], true)
         ) {
             return '<script type="module" src="' . esc_url($src) . '" id="' . $handle . '-js"></script>';
@@ -51,13 +37,23 @@ class CONFIGURATOR_Assets
         return $tag;
     }
 
+    public static function add_upload_mimes($mimes)
+    {
+        $mimes['glb'] = 'model/gltf-binary';
+        $mimes['gltf'] = 'model/gltf+json';
+        $mimes['obj'] = 'text/plain';
+        $mimes['fbx'] = 'application/octet-stream';
+
+        return $mimes;
+    }
+
     public static function frontend()
     {
         wp_enqueue_script(
             'configurator-model-viewer',
-            'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js',
+            'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js',
             [],
-            null,
+            '3.5.0',
             true
         );
 
@@ -85,20 +81,21 @@ class CONFIGURATOR_Assets
 
         $screen = get_current_screen();
         if (!$screen || $screen->post_type !== CONFIGURATOR_POST_TYPE) {
-            wp_enqueue_media();
             return;
         }
 
         wp_enqueue_style(
             'configurator-admin-css',
-            CONFIGURATOR_URL . 'assets/css/admin-configurator.css'
+            CONFIGURATOR_URL . 'assets/css/admin-configurator.css',
+            [],
+            CONFIGURATOR_VERSION
         );
 
         wp_enqueue_script(
             'configurator-model-viewer-admin',
-            'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js',
+            'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js',
             [],
-            null,
+            '3.5.0',
             true
         );
 
@@ -119,16 +116,3 @@ class CONFIGURATOR_Assets
         );
     }
 }
-add_filter('upload_mimes', function ($mimes) {
-    // GLB (binary glTF)
-    $mimes['glb'] = 'model/gltf-binary';
-
-    // GLTF (JSON-based)
-    $mimes['gltf'] = 'model/gltf+json';
-
-    // Optional: OBJ, FBX if needed
-    $mimes['obj'] = 'text/plain';
-    $mimes['fbx'] = 'application/octet-stream';
-
-    return $mimes;
-});

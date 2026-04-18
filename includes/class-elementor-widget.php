@@ -27,23 +27,14 @@ class CONFIGURATOR_Elementor_Widget extends \Elementor\Widget_Base
         return ['general'];
     }
 
-    protected function _register_controls()
+    protected function register_controls()
     {
         $this->start_controls_section(
             'section_config',
             ['label' => 'Configurator']
         );
 
-        $configs = get_posts([
-            'post_type' => CONFIGURATOR_POST_TYPE,
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-        ]);
-
-        $options = ['' => 'Select a configurator'];
-        foreach ($configs as $c) {
-            $options[$c->ID] = $c->post_title;
-        }
+        $options = CONFIGURATOR_Elementor::get_cached_configurator_options();
 
         $this->add_control(
             'configurator_id',

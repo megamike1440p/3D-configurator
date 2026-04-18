@@ -36,8 +36,9 @@ class CONFIGURATOR_Meta_Box
 
                 <p>
                     <label for="_configurator_model_url"><strong>Model (.glb) URL</strong></label><br>
-                    <input type="text" id="_configurator_model_url" name="_configurator_model_url" value="<?php echo esc_attr($_configurator_model_url); ?>"
-                        style="width:100%;" placeholder="https://.../model.glb" />
+                    <input type="text" id="_configurator_model_url" name="_configurator_model_url"
+                        value="<?php echo esc_attr($_configurator_model_url); ?>" style="width:100%;"
+                        placeholder="https://.../model.glb" />
                 </p>
 
                 <p>
@@ -64,9 +65,10 @@ class CONFIGURATOR_Meta_Box
                     <p>Loading builder...</p>
                 </div>
 
-                <textarea id="_configurator_config_json" name="_configurator_config_json" rows="10" style="width:100%; display:none;"><?php
-                echo esc_textarea($_configurator_config_json);
-                ?></textarea>
+                <textarea id="_configurator_config_json" name="_configurator_config_json" rows="10"
+                    style="width:100%; display:none;"><?php
+                    echo esc_textarea($_configurator_config_json);
+                    ?></textarea>
 
                 <p style="margin-top:10px;">
                     <em>Shortcode:</em>
@@ -78,8 +80,8 @@ class CONFIGURATOR_Meta_Box
                 <p><strong>3D Model Preview</strong></p>
 
                 <div id="admin-viewer-wrap">
-                    <model-viewer id="admin-model-viewer" src="<?php echo esc_url($_configurator_model_url); ?>" camera-controls auto-rotate
-                        disable-zoom interaction-prompt="none" environment-image="neutral" shadow-intensity="1"
+                    <model-viewer id="admin-model-viewer" src="<?php echo esc_url($_configurator_model_url); ?>" camera-controls
+                        auto-rotate disable-zoom interaction-prompt="none" environment-image="neutral" shadow-intensity="1"
                         enable-for-material-picker style="width: 100%; height: 100%;">
                     </model-viewer>
                 </div>
@@ -108,10 +110,22 @@ class CONFIGURATOR_Meta_Box
         }
 
         if (isset($_POST['_configurator_config_json'])) {
+            $config_json = wp_unslash($_POST['_configurator_config_json']);
+
+            if ($config_json === '') {
+                update_post_meta($post_id, '_configurator_config_json', '');
+                return;
+            }
+
+            json_decode($config_json);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return;
+            }
+
             update_post_meta(
                 $post_id,
                 '_configurator_config_json',
-                wp_kses_post(wp_unslash($_POST['_configurator_config_json']))
+                $config_json
             );
         }
     }

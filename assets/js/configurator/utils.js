@@ -3,7 +3,9 @@
  * Pure functions only — no side effects, no state imports.
  */
 
-export const DEBUG = true;
+export const DEBUG =
+    typeof window !== "undefined" &&
+    Boolean(window.CONFIGURATOR_DEBUG);
 
 export function $(sel, root = document) {
     return root.querySelector(sel);

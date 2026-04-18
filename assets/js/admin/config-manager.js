@@ -12,13 +12,17 @@ import { state } from './state.js';
 import { uid } from './utils.js';
 
 const $ = window.jQuery;
+const SELECTORS = {
+    basePrice: '#_configurator_base_price',
+    configJson: '#_configurator_config_json',
+};
 
 // -----------------------------
 // DOM value helpers
 // -----------------------------
 
 export function getBasePrice() {
-    const v = Number($("#base_price").val() || 0);
+    const v = Number($(SELECTORS.basePrice).val() || 0);
     return Number.isFinite(v) ? v : 0;
 }
 
@@ -36,7 +40,7 @@ export function getMaterialsList() {
 export function syncHiddenJSON() {
     state.CFG.basePrice = getBasePrice();
     const json = JSON.stringify(state.CFG);
-    const $ta = $("#config_json");
+    const $ta = $(SELECTORS.configJson);
     $ta.val(json);
     // Notify material scanner and other admin helpers
     $(document).trigger("config-updated", [state.CFG]);
@@ -65,16 +69,7 @@ export function findNodeById(id) {
 }
 
 export function findNodeByIdDeep(id) {
-    if (!state.CFG?.root || !id) return null;
-
-    let found = null;
-    (function walkDeep(n) {
-        if (!n || found) return;
-        if (n.id === id) { found = n; return; }
-        (n.children || []).forEach(walkDeep);
-    })(state.CFG.root);
-
-    return found;
+    return findNodeById(id);
 }
 
 export function findParentOf(childId) {

@@ -180,16 +180,7 @@
      * (We do this so model swaps can re-run the preview after load.)
      */
     function findNodeByIdDeep(id) {
-        if (!CFG?.root || !id) return null;
-
-        let found = null;
-        (function walk(n) {
-            if (!n || found) return;
-            if (n.id === id) { found = n; return; }
-            (n.children || []).forEach(walk);
-        })(CFG.root);
-
-        return found;
+        return findNodeById(id);
     }
     /**
      * Runtime-style texture getter:
@@ -200,7 +191,10 @@
         if (!url || !ADMIN_VIEWER) return Promise.resolve(null);
         if (PREVIEW_TEXTURE_PROMISES.has(url)) return PREVIEW_TEXTURE_PROMISES.get(url);
 
-        const p = ADMIN_VIEWER.createTexture(url);
+        const p = ADMIN_VIEWER.createTexture(url).catch((error) => {
+            PREVIEW_TEXTURE_PROMISES.delete(url);
+            throw error;
+        });
         PREVIEW_TEXTURE_PROMISES.set(url, p);
         return p;
     }
@@ -1586,7 +1580,15 @@ ${eff.mode === "recolorable" ? `
     }
 
     function hexToRGBA(hex) {
+        if (!hex || typeof hex !== "string") {
+            return [1, 1, 1, 1];
+        }
+
         const c = hex.replace("#", "");
+        if (!/^[0-9a-fA-F]{6}$/.test(c)) {
+            return [1, 1, 1, 1];
+        }
+
         const bigint = parseInt(c, 16);
         return [
             ((bigint >> 16) & 255) / 255,

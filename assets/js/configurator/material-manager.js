@@ -110,7 +110,10 @@ export function getTexture(url) {
     if (!url) return Promise.resolve(null);
     if (state.TEXTURE_PROMISES.has(url)) return state.TEXTURE_PROMISES.get(url);
 
-    const p = state.MV.createTexture(url);
+    const p = state.MV.createTexture(url).catch(error => {
+        state.TEXTURE_PROMISES.delete(url);
+        throw error;
+    });
     state.TEXTURE_PROMISES.set(url, p);
     return p;
 }

@@ -85,6 +85,7 @@ export function renderGroupForNode(node, container, { isRoot = false } = {}) {
 function buildOptionButton(child) {
     const btn = document.createElement("div");
     btn.className = "hm-option";
+    btn.dataset.id = child.id;
 
     const thumbUrl =
         child.thumbUrl ||
@@ -95,17 +96,28 @@ function buildOptionButton(child) {
 
     if (thumbUrl) {
         btn.classList.add("has-thumb");
-        btn.innerHTML = `
-            <div class="hm-option-thumb">
-                <img class="hm-option-thumb-img" src="${thumbUrl}" alt="" loading="lazy" />
-            </div>
-            <div class="hm-option-label">${child.label || child.id}</div>
-        `;
-    } else {
-        btn.innerHTML = `<div class="hm-option-label">${child.label || child.id}</div>`;
-    }
+        const thumb = document.createElement("div");
+        thumb.className = "hm-option-thumb";
 
-    btn.dataset.id = child.id;
+        const image = document.createElement("img");
+        image.className = "hm-option-thumb-img";
+        image.src = thumbUrl;
+        image.alt = "";
+        image.loading = "lazy";
+        thumb.appendChild(image);
+
+        const label = document.createElement("div");
+        label.className = "hm-option-label";
+        label.textContent = child.label || child.id;
+
+        btn.appendChild(thumb);
+        btn.appendChild(label);
+    } else {
+        const label = document.createElement("div");
+        label.className = "hm-option-label";
+        label.textContent = child.label || child.id;
+        btn.appendChild(label);
+    }
     return btn;
 }
 

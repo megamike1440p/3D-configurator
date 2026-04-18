@@ -279,10 +279,7 @@
             $(SELECTORS.materialsList).html('<em>Scanning model…</em>');
 
             try {
-                await scanUrlOnMainViewer(url, { clearOriginal: true });
-                const list = window.MATERIALS.list = Array.from(new Set(window.MATERIALS.list)).sort();
-                // scanUrlOnMainViewer returns names, but we also want to render from current scan
-                const names = await scanMaterials(mv, { clearOriginal: false });
+                const names = await scanUrlOnMainViewer(url, { clearOriginal: true });
                 renderMaterialsUI(names);
             } catch (e) {
                 console.error(e);
